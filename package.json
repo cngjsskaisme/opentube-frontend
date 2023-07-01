@@ -1,16 +1,31 @@
 {
   "name": "nuxt-app",
+  "version": "0.0.1",
   "private": true,
   "scripts": {
     "build": "nuxt build",
-    "dev": "nuxt dev",
+    "dev": "nuxt dev --port 3001",
     "generate": "nuxt generate",
     "preview": "nuxt preview",
     "postinstall": "nuxt prepare"
   },
   "devDependencies": {
     "@nuxt/devtools": "latest",
+    "@nuxtjs/i18n": "^8.0.0-beta.12",
     "@types/node": "^18",
     "nuxt": "^3.6.1"
-  }
+  },
+  "dependencies": {
+    "@nuxt/types": "^2.17.0",
+    "@pinia/nuxt": "^0.4.11",
+    "@types/lodash": "^4.14.195",
+    "dayjs": "^1.11.8",
+    "lodash": "^4.17.21",
+    "pinia": "^2.1.4",
+    "video.js": "^8.3.0"
+  },
+  "overrides": {
+    "vue": "latest"
+  },
+  "type": "module"
 }
