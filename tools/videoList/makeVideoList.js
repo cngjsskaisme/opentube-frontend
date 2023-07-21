@@ -14,16 +14,5 @@ export default async ({ videoList } = { videoList: null }) => {
     return element
   })
 
-  // _.forEach(videoList.value, async (element, index) => {
-  //   try {
-  //     videoList.value[index].thumbnail = await getVideoThumbnailBase64({
-  //       videoPath: element.path,
-  //       startingPoint: Math.floor(Math.random() * parseFloat(element.length)) || 0
-  //     })
-  //   } catch (e) {
-
-  //   }
-  // })
-
   return tempVideoList
 }
