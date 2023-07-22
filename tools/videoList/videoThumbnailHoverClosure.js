@@ -1,6 +1,6 @@
 import _ from 'lodash'
 
-export default ({ videoList, videoSettings, videoDOMList }) => {
+export default ({ videoList, videoMainListSettings, videoDOMList }) => {
   let registeredCallback = []
   return (videoEntry, index, clearEvent) => {
     videoList.value.data[index].isThumbnailTransitionStarted = true
@@ -32,9 +32,21 @@ export default ({ videoList, videoSettings, videoDOMList }) => {
         /* Thumbnail Hide */
         registeredCallback.push(setTimeout(() => {
           element.shouldHideThumbnail = (innerIndex === index)
-          if (videoSettings.player.playRandomPoint) {
+          if (videoMainListSettings.thumbnail.playerRandomPointPlay) {
             const currentVideoTag = videoDOMList.value[index] && videoDOMList.value[index].querySelector('video')
-            if (currentVideoTag) { currentVideoTag.currentTime = Math.floor(Math.random() * element.length) }
+            if (currentVideoTag) {
+              currentVideoTag.onloadedmetadata = () => {
+                const finalVideoLength = currentVideoTag.duration >= element.length ? currentVideoTag.duration : element.length
+                currentVideoTag.currentTime = Math.floor(Math.random() * finalVideoLength)
+                console.log(Math.floor(Math.random() * finalVideoLength));//this refers to myVideo
+                console.log('')
+                try {
+                  currentVideoTag.play()
+                } catch (e) {
+                  // noop 
+                }
+              };
+            }
           }
         }, 200))
 

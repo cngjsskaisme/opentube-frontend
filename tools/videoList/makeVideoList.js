@@ -11,6 +11,7 @@ export default async ({ videoList } = { videoList: null }) => {
     element.videoPlayer = null
     element.title = element.path.split('\\')
     element.title = element.title[element.title.length - 1]
+    element.thumbnailBase64 = ''
     return element
   })
 
