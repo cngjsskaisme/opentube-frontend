@@ -8,7 +8,8 @@ export default defineNuxtConfig({
       {
         vueI18n: './i18n.config.ts' // if you are using custom path, default 
       }
-    ]
+    ],
+    '@vueuse/nuxt'
   ],
   runtimeConfig: {
     public: {

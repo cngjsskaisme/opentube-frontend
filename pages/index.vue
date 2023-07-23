@@ -18,6 +18,8 @@ const videoList = ref({
 })
 const videoDOMList = ref(null)
 
+
+// should be videoList key
 const videoMainListSettings = reactive({
   thumbnail: {
     playerAutoMute: true,
@@ -64,6 +66,16 @@ const handleVideoThumbnailHover = videoThumbnailHoverClosure({ videoList, videoM
 /* VideoList Fetch Logic */
 let thumbnailRequestAbortControllers = {}
 let thumbnailGetBatchList = []
+
+onBeforeRouteLeave(() => {
+  _.mapValues(thumbnailRequestAbortControllers, (element) => {
+    try {
+      element.abort()
+    } catch (e) {
+      // noop
+    }
+  })
+})
 
 const fetchOpenTube = async ({ mode } = { mode: 'normal' }) => {
   /* Abort thumbnail requests if there are existing requests... */
@@ -177,7 +189,7 @@ const fetchOpenTube = async ({ mode } = { mode: 'normal' }) => {
 }
 
 useAsyncData((ojbs) => {
-  console.log(ojbs);
+  // console.log(ojbs.$router.getRoutes());
 })
 
 fetchOpenTube({ mode: 'init' })

@@ -36,10 +36,12 @@ export default ({ videoList, videoMainListSettings, videoDOMList }) => {
             const currentVideoTag = videoDOMList.value[index] && videoDOMList.value[index].querySelector('video')
             if (currentVideoTag) {
               currentVideoTag.onloadedmetadata = () => {
+                let randomSeed = 0
+                try {
+                  randomSeed = crypto.getRandomValues(new Uint32Array(1))[0] / Math.pow(2, 32)
+                } catch { randomSeed = Math.random() }
                 const finalVideoLength = currentVideoTag.duration >= element.length ? currentVideoTag.duration : element.length
-                currentVideoTag.currentTime = Math.floor(Math.random() * finalVideoLength)
-                console.log(Math.floor(Math.random() * finalVideoLength));//this refers to myVideo
-                console.log('')
+                currentVideoTag.currentTime = Math.floor(randomSeed * finalVideoLength)
                 try {
                   currentVideoTag.play()
                 } catch (e) {
