@@ -13,6 +13,9 @@ export const useVideoWatchStore = defineStore({
       },
       queue: {
         autoAddRandomVideoIfQueueEmpty: true
+      },
+      bossKey: {
+        url: 'https://www.naver.com'
       }
     },
     meta: {
@@ -66,9 +69,12 @@ export const useVideoWatchStore = defineStore({
         hotKey: {
           toggleBossKey: {
             description: 'Toggle boss key',
-            keyCode: null,
-            code: null,
-            callback: null
+            keyCode: 87,
+            code: 'KeyW',
+            callback: ({ videoDOM, currentVideo }: any) => {
+              const videoWatchStore = useVideoWatchStore()
+              window.location.href = videoWatchStore.setting.bossKey.url
+            }
           },
           togglePlay: {
             description: 'Toggle play & pause video',
@@ -177,9 +183,14 @@ export const useVideoWatchStore = defineStore({
             keyCode: 88,
             code: 'KeyX',
             callback: async ({ videoDOM, currentVideo }: any) => {
+              const videoWatchStore = useVideoWatchStore()
               const router = useRouter()
+              const queue = videoWatchStore.meta.queue
               const randomIndexResult = await useOpenTubeFetch('/video/random/index') as any
-              router.push(`/watch/${randomIndexResult.data.value.data}`)
+              const lastQueueIndex = queue.entries.length <= 0 ? 0 : queue.entries.length - 1
+              queue.cursor = lastQueueIndex === 0 ? 1 : lastQueueIndex + 1
+              router.push(`/watch?v=${randomIndexResult.data.value.data}`)
+              return
             }
           },
           playPrevQueue: {
@@ -193,7 +204,7 @@ export const useVideoWatchStore = defineStore({
               if (queue.cursor <= 0) { return }
               queue.cursor += (-1)
               const currentPrevVideo = videoWatchStore.meta.queue.entries[queue.cursor]
-              router.push(`/watch/${currentPrevVideo.id}`)
+              router.push(`/watch?v=${currentPrevVideo.id}`)
             }
           },
           playNextQueue: {
@@ -207,14 +218,12 @@ export const useVideoWatchStore = defineStore({
               const router = useRouter()
               if ((queue.entries.length === 0 || queue.cursor === queue.entries.length - 1)
                 && queueSetting.autoAddRandomVideoIfQueueEmpty) {
-                const randomIndexResult = await useOpenTubeFetch('/video/random/index') as any
-                queue.cursor += 1
-                router.push(`/watch/${randomIndexResult.data.value.data}`)
+                videoWatchStore.getHotKey.hotKey.playNextRandom.callback({ videoDOM, currentVideo })
                 return
               }
               queue.cursor += 1
               const currentNextVideo = videoWatchStore.meta.queue.entries[queue.cursor]
-              router.push(`/watch/${currentNextVideo.id}`)
+              router.push(`/watch?v=${currentNextVideo.id}`)
             }
           },
           playPrevPlaylist: {

@@ -268,7 +268,7 @@ fetchOpenTube({ mode: 'init' })
       </div>
       <div v-else v-for="(entry, index) in videoList.data" :key="index" ref="videoDOMList" class="video"
         style="width: 320px; margin: 0 0.5em 2em 0.5em;">
-        <NuxtLink :to="`/watch/${entry.id}`">
+        <NuxtLink :to="`/watch?v=${entry.id}`">
           <div v-if="!entry.shouldHideThumbnail" :style="{
             position: 'relative',
             width: '320px',
