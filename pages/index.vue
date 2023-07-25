@@ -1,23 +1,13 @@
 <script setup>
 import { onMounted, reactive, ref } from 'vue'
+import { useClipboard } from '@vueuse/core'
 import { useOpenTubeFetch } from '~/tools/useOpenTubeFetch'
 import { useSettingStore } from '~/stores/setting'
 import _ from 'lodash'
 import dayjs from '~/tools/provideDayjs'
 import videoThumbnailHoverClosure from '~/tools/videoList/videoThumbnailHoverClosure'
 import makeVideoList from '~/tools/videoList/makeVideoList'
-
-const settingStore = useSettingStore()
-
-const config = useRuntimeConfig();
-
-const videoList = ref({
-  isLoading: true,
-  isThumbnailsLoading: true,
-  data: null
-})
-const videoDOMList = ref(null)
-
+import formatVideoPath from '~/tools/formatVideoPath'
 
 // should be videoList key
 const videoMainListSettings = reactive({
@@ -36,10 +26,25 @@ const videoMainListSettings = reactive({
     videoExceptKeyword: ''
   }
 })
+const settingStore = useSettingStore()
+const config = useRuntimeConfig();
+const videoList = ref({
+  isLoading: true,
+  isThumbnailsLoading: true,
+  data: null
+})
+const videoDOMList = ref(null)
+
+
+/* Load playlist */
+const fetchedAllPlaylist = await useOpenTubeFetch('/playlist')
+const allPlaylist = ref(null)
+allPlaylist.value = fetchedAllPlaylist.data.value
+
 
 /* Fetch Crawl Path List */
 const result = await useOpenTubeFetch('/video/scan/path')
-videoMainListSettings.walk.videoCrawlPath = result.data.value.crawlPath
+videoMainListSettings.walk.videoCrawlPath = result.data.value?.crawlPath || ''
 const onUpdateCrawlPath = async () => {
   await $fetch(`${config.public.fetchBaseURL}/video/scan/path`, {
     method: 'POST',
@@ -185,7 +190,6 @@ const fetchOpenTube = async ({ mode } = { mode: 'normal' }) => {
 
   /* Mark thumbnails load done */
   videoList.value.isThumbnailsLoading = false
-
 }
 
 useAsyncData((ojbs) => {
@@ -237,7 +241,10 @@ fetchOpenTube({ mode: 'init' })
 
   <div id="main" style="width: 100%; margin-top: 20px; display: flex; justify-content: center;">
     <div style="max-width: 1400px; width: 90%; display: flex; flex-wrap: wrap; justify-content: center;">
-      <div v-if="videoList.isLoading" v-for="_ in Array(videoMainListSettings.walk.videoListCount)" class="video"
+      <div
+        v-if="videoList.isLoading"
+        v-for="_ in Array(videoMainListSettings.walk.videoListCount)"
+        class="video"
         style="width: 320px; margin: 0 0.5em 2em 0.5em;">
         <div :style="{
           position: 'relative',
@@ -268,7 +275,7 @@ fetchOpenTube({ mode: 'init' })
       </div>
       <div v-else v-for="(entry, index) in videoList.data" :key="index" ref="videoDOMList" class="video"
         style="width: 320px; margin: 0 0.5em 2em 0.5em;">
-        <NuxtLink :to="`/watch?v=${entry.id}`">
+        <NuxtVideoLink :video-id="entry.id">
           <div v-if="!entry.shouldHideThumbnail" :style="{
             position: 'relative',
             width: '320px',
@@ -323,7 +330,15 @@ fetchOpenTube({ mode: 'init' })
               ">
             {{ entry.title }}
           </a>
-        </NuxtLink>
+        </NuxtVideoLink>
+      </div>
+      <div style="width: 90%;">
+        <b>Playlists</b>
+        <div v-for="(entry, index) in allPlaylist.data">
+          <NuxtLink :to="formatVideoPath({ videoId: entry.videos[0].video.id, playlistId: entry.id, playlistVideoIndex: 1 })">
+            {{ entry.name }}
+          </NuxtLink>
+        </div>
       </div>
     </div>
   </div>

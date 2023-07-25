@@ -17,6 +17,9 @@
     "@vueuse/nuxt": "^10.2.1",
     "nuxt": "^3.6.1"
   },
+  "peerDependencies": {
+    "vue": ">=3.0.0"
+  },
   "dependencies": {
     "@nuxt/types": "^2.17.0",
     "@pinia/nuxt": "^0.4.11",
@@ -24,7 +27,8 @@
     "dayjs": "^1.11.8",
     "lodash": "^4.17.21",
     "pinia": "^2.1.4",
-    "video.js": "^8.3.0"
+    "video.js": "^8.3.0",
+    "vue-demi": "^0.14.5"
   },
   "overrides": {
     "vue": "latest"

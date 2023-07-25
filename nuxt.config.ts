@@ -15,5 +15,10 @@ export default defineNuxtConfig({
     public: {
       fetchBaseURL: process.env.FETCH_BASE_URL
     }
+  },
+  vite: {
+    optimizeDeps: {
+      exclude: ['vue-demi']
+    }
   }
 })

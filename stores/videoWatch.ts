@@ -1,6 +1,7 @@
 import _ from 'lodash'
 import { defineStore, acceptHMRUpdate } from 'pinia'
 import { useOpenTubeFetch } from '~/tools/useOpenTubeFetch'
+import formatVideoPath from '~/tools/formatVideoPath'
 
 export const useVideoWatchStore = defineStore({
   id: 'videoWatch',
@@ -38,31 +39,20 @@ export const useVideoWatchStore = defineStore({
   }),
   actions: {
     queue: {
-      clear () {
+      clear() {
         this.meta.playlist.entries = []
       },
-      setCursor (index: number) {
+      setCursor(index: number) {
         this.meta.playlist.cursor = index
       },
-      push (item: any) {
+      push(item: any) {
         this.meta.queue.entries.push(item)
         return item
       },
-      pop (item: any) {
+      pop(item: any) {
         return this.meta.queue.entries.pop()
       }
     },
-    playlist: {
-      async set (playlistId: number) {
-        await useOpenTubeFetch(``)
-      },
-      async addVideo (videoId: number) {
-
-      },
-      async deleteVideo (videoId: number) {
-
-      }
-    }
   },
   getters: {
     getHotKey: (state) => {
@@ -72,7 +62,7 @@ export const useVideoWatchStore = defineStore({
             description: 'Toggle boss key',
             keyCode: 87,
             code: 'KeyW',
-            callback: ({ videoDOM, currentVideo, playlistState }: any) => {
+            callback: ({ videoDOM, currentVideo, playlistState, activeCursor }: any) => {
               const videoWatchStore = useVideoWatchStore()
               window.location.href = videoWatchStore.setting.bossKey.url
             }
@@ -81,7 +71,7 @@ export const useVideoWatchStore = defineStore({
             description: 'Toggle play & pause video',
             keyCode: 32,
             code: 'Space',
-            callback: ({ videoDOM, currentVideo, playlistState }: any) => {
+            callback: ({ videoDOM, currentVideo, playlistState, activeCursor }: any) => {
               videoDOM.paused ? videoDOM.play() : videoDOM.pause()
 
             }
@@ -90,9 +80,8 @@ export const useVideoWatchStore = defineStore({
             description: 'Toggle fullscreen mode',
             keyCode: 71,
             code: 'KeyG',
-            callback: ({ videoDOM, currentVideo, playlistState }: any) => {
+            callback: ({ videoDOM, currentVideo, playlistState, activeCursor }: any) => {
               const targetWindow = window as any
-              console.log(targetWindow)
               if (targetWindow.fullScreen) {
                 console.log('?')
                 targetWindow.document.webkitExitFullscreen && targetWindow.document.webkitExitFullscreen()
@@ -106,7 +95,7 @@ export const useVideoWatchStore = defineStore({
             description: 'Volume up',
             keyCode: 38,
             code: 'ArrowUp',
-            callback: ({ videoDOM, currentVideo, playlistState }: any) => {
+            callback: ({ videoDOM, currentVideo, playlistState, activeCursor }: any) => {
               const resultAmount = videoDOM.volume + state.setting.video.volumeAmount / 100
               if (resultAmount >= 1) { videoDOM.volume = 1; return }
               videoDOM.volume = resultAmount
@@ -116,7 +105,7 @@ export const useVideoWatchStore = defineStore({
             description: 'Volume Down',
             keyCode: 40,
             code: 'ArrowDown',
-            callback: ({ videoDOM, currentVideo, playlistState }: any) => {
+            callback: ({ videoDOM, currentVideo, playlistState, activeCursor }: any) => {
               const resultAmount = videoDOM.volume - state.setting.video.volumeAmount / 100
               if (resultAmount <= 0) { videoDOM.volume = 0; return }
               videoDOM.volume = resultAmount
@@ -126,7 +115,7 @@ export const useVideoWatchStore = defineStore({
             description: 'Volume Mute',
             keyCode: 77,
             code: 'KeyM',
-            callback: ({ videoDOM, currentVideo, playlistState }: any) => {
+            callback: ({ videoDOM, currentVideo, playlistState, activeCursor }: any) => {
               if (videoDOM.volume === 0) {
                 videoDOM.volume = state.setting.video.volumeSaved
                 return
@@ -137,9 +126,9 @@ export const useVideoWatchStore = defineStore({
           },
           addToPlaylist: {
             description: 'Add current video to playlist',
-            keyCode: 65,
-            code: 'KeyA',
-            callback: ({ videoDOM, currentVideo, playlistState }: any) => {
+            keyCode: 66,
+            code: 'KeyB',
+            callback: ({ videoDOM, currentVideo, playlistState, activeCursor }: any) => {
               playlistState.methods.popup.handlePostToRecentPlaylistVideo()
             }
           },
@@ -147,7 +136,7 @@ export const useVideoWatchStore = defineStore({
             description: 'Seek next point',
             keyCode: 70,
             code: 'KeyF',
-            callback: ({ videoDOM, currentVideo, playlistState }: any) => {
+            callback: ({ videoDOM, currentVideo, playlistState, activeCursor }: any) => {
               const videoWatchStore = useVideoWatchStore()
               const finalVideoLength = videoDOM.duration >= currentVideo.length ? videoDOM.duration : currentVideo.length
               const resultCurrentTime = videoDOM.currentTime + videoWatchStore.setting.video.seekTimeAmount
@@ -159,7 +148,7 @@ export const useVideoWatchStore = defineStore({
             description: 'Seek previous point',
             keyCode: 68,
             code: 'KeyD',
-            callback: ({ videoDOM, currentVideo, playlistState }: any) => {
+            callback: ({ videoDOM, currentVideo, playlistState, activeCursor }: any) => {
               const videoWatchStore = useVideoWatchStore()
               const resultCurrentTime = videoDOM.currentTime - videoWatchStore.setting.video.seekTimeAmount
               if (resultCurrentTime <= 0) { videoDOM.currentTime = 0; return }
@@ -170,7 +159,7 @@ export const useVideoWatchStore = defineStore({
             description: 'Seek random point',
             keyCode: 90,
             code: 'KeyZ',
-            callback: ({ videoDOM, currentVideo, playlistState }: any) => {
+            callback: ({ videoDOM, currentVideo, playlistState, activeCursor }: any) => {
               const finalVideoLength = videoDOM.duration >= currentVideo.length ? videoDOM.duration : currentVideo.length
               let randomSeed = 0
               try {
@@ -183,14 +172,16 @@ export const useVideoWatchStore = defineStore({
             description: 'Play next random video',
             keyCode: 88,
             code: 'KeyX',
-            callback: async ({ videoDOM, currentVideo, playlistState }: any) => {
+            callback: async ({ videoDOM, currentVideo, playlistState, activeCursor }: any) => {
+              activeCursor.value = 'queue'
               const videoWatchStore = useVideoWatchStore()
+              const route = useRoute()
               const router = useRouter()
               const queue = videoWatchStore.meta.queue
               const randomIndexResult = await useOpenTubeFetch('/video/random/index') as any
               const lastQueueIndex = queue.entries.length <= 0 ? 0 : queue.entries.length - 1
               queue.cursor = lastQueueIndex === 0 ? 1 : lastQueueIndex + 1
-              router.push(`/watch?v=${randomIndexResult.data.value.data}`)
+              router.push(formatVideoPath({ videoId: randomIndexResult.data.value.data, route }))
               return
             }
           },
@@ -198,40 +189,57 @@ export const useVideoWatchStore = defineStore({
             description: 'Play previous video in the queue',
             keyCode: 67,
             code: 'KeyC',
-            callback: ({ videoDOM, currentVideo, playlistState }: any) => {
+            callback: ({ videoDOM, currentVideo, playlistState, activeCursor }: any) => {
+              activeCursor.value = 'queue'
               const videoWatchStore = useVideoWatchStore()
               const queue = videoWatchStore.meta.queue
+              const route = useRoute()
               const router = useRouter()
               if (queue.cursor <= 0) { return }
               queue.cursor += (-1)
               const currentPrevVideo = videoWatchStore.meta.queue.entries[queue.cursor]
-              router.push(`/watch?v=${currentPrevVideo.id}`)
+              router.push(formatVideoPath({ videoId: currentPrevVideo.id, route }))
             }
           },
           playNextQueue: {
             description: 'Play next video in the queue',
             keyCode: 86,
             code: 'KeyV',
-            callback: async ({ videoDOM, currentVideo, playlistState }: any) => {
+            callback: async ({ videoDOM, currentVideo, playlistState, activeCursor }: any) => {
+              activeCursor.value = 'queue'
               const videoWatchStore = useVideoWatchStore()
               const queueSetting = videoWatchStore.setting.queue
               const queue = videoWatchStore.meta.queue
+              const route = useRoute()
               const router = useRouter()
               if ((queue.entries.length === 0 || queue.cursor === queue.entries.length - 1)
                 && queueSetting.autoAddRandomVideoIfQueueEmpty) {
-                videoWatchStore.getHotKey.result.playNextRandom.callback({ videoDOM, currentVideo, playlistState })
+                videoWatchStore.getHotKey.result.playNextRandom.callback({ videoDOM, currentVideo, playlistState, activeCursor })
                 return
               }
               queue.cursor += 1
               const currentNextVideo = videoWatchStore.meta.queue.entries[queue.cursor]
-              router.push(`/watch?v=${currentNextVideo.id}`)
+              router.push(formatVideoPath({ videoId: currentNextVideo.id, route }))
             }
           },
           playPrevPlaylist: {
             description: 'Play previous video in playlist',
             keyCode: 65,
             code: 'KeyA',
-            callback: ({ videoDOM, currentVideo, playlistState }: any) => {
+            callback: ({ videoDOM, currentVideo, playlistState, activeCursor }: any) => {
+              if (!playlistState.isAvailable) { return }
+              const route = useRoute()
+              const router = useRouter()
+              activeCursor.value = 'playlist'
+              if (playlistState.cursor <= 0) { return }
+              playlistState.cursor += (-1)
+              const currentPrevVideo = playlistState.entries[playlistState.cursor]
+              router.push(formatVideoPath({
+                videoId: currentPrevVideo.videoId,
+                playlistId: currentPrevVideo.playlistId,
+                playlistVideoIndex: currentPrevVideo.orderIndex,
+                route
+              }))
 
             }
           },
@@ -239,15 +247,30 @@ export const useVideoWatchStore = defineStore({
             description: 'Play next video in playlist',
             keyCode: 83,
             code: 'KeyS',
-            callback: ({ videoDOM, currentVideo, playlistState }: any) => {
-
+            callback: ({ videoDOM, currentVideo, playlistState, activeCursor }: any) => {
+              if (!playlistState.isAvailable) { return }
+              const route = useRoute()
+              const router = useRouter()
+              activeCursor.value = 'playlist'
+              if (playlistState.entries.length === 0 ||
+                playlistState.cursor === playlistState.entries.length - 1) {
+                return
+              }
+              playlistState.cursor += 1
+              const currentNextVideo = playlistState.entries[playlistState.cursor]
+              router.push(formatVideoPath({
+                videoId: currentNextVideo.videoId,
+                playlistId: currentNextVideo.playlistId,
+                playlistVideoIndex: currentNextVideo.orderIndex,
+                route
+              }))
             }
           },
           navigateToVideoList: {
             description: 'Navigate back to Main Video List',
-            keyCode: 71,
-            code: 'KeyG',
-            callback: ({ videoDOM, currentVideo, playlistState }: any) => {
+            keyCode: 69,
+            code: 'KeyE',
+            callback: ({ videoDOM, currentVideo, playlistState, activeCursor }: any) => {
               const router = useRouter()
               router.push('/')
             }
@@ -256,8 +279,7 @@ export const useVideoWatchStore = defineStore({
             description: 'Toggle theater mode',
             keyCode: 81,
             code: 'KeyQ',
-            callback: ({ videoDOM, currentVideo, playlistState }: any) => {
-
+            callback: ({ videoDOM, currentVideo, playlistState, activeCursor }: any) => {
             }
           }
         }
